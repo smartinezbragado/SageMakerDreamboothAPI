@@ -37,7 +37,7 @@ class SageMakerTrain:
 
     def __init_session(self):
         """Initiates SageMaker session"""
-        sm_boto = boto3.client("sagemaker")
+        sm_boto = boto3.client("sagemaker", region="us-east-1")
 
         sess = sagemaker.Session(sagemaker_client=sm_boto)
         sagemaker_session_bucket = None
