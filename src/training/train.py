@@ -1,0 +1,97 @@
+"""
+Training script for Hugging Face SageMaker Estimator
+"""
+import argparse
+import logging
+import os
+import sys
+
+os.system('pip install bitsandbytes')
+os.system('pip install setuptools==59.5.0')
+
+import glob    
+
+# TODO: script comes from example, refactor it according to needs
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+
+    # hyperparameters sent by the client are passed as command-line arguments to the script.
+    parser.add_argument("--instance_prompt", type=str)
+    parser.add_argument("--pretrained_model_name_or_path", type=str, default="stabilityai/stable-diffusion-2-1")
+    parser.add_argument("--resolution", type=int, default=768)
+    parser.add_argument("--train_batch_size", type=int, default=1)
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
+    parser.add_argument("--learning_rate", type=float, default=5e-5)
+    parser.add_argument("--lr_warmup_steps", type=int, default=0)
+    parser.add_argument("--num_class_images", type=int, default=200)
+    parser.add_argument("--max_train_steps", type=int, default=800)
+
+    print(os.environ["SM_NUM_GPUS"])
+
+    # Data, model, and output directories
+    parser.add_argument(
+        "--output-data-dir", type=str, default=os.environ["SM_OUTPUT_DATA_DIR"]
+    )
+    parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
+    parser.add_argument("--n_gpus", type=str, default=os.environ["SM_NUM_GPUS"])
+    parser.add_argument(
+        "--training_dir", type=str, default=os.environ["SM_CHANNEL_TRAIN"]
+    )
+    parser.add_argument("--test_dir", type=str, default=os.environ["SM_CHANNEL_TEST"])
+
+    args, _ = parser.parse_known_args()
+
+    # Set up logging
+    logger = logging.getLogger(__name__)
+
+    logging.basicConfig(
+        level=logging.getLevelName("INFO"),
+        handlers=[logging.StreamHandler(sys.stdout)],
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    
+    # Donwload diffusers repo & install dependencies
+    os.system('git clone https://github.com/huggingface/diffusers')
+    os.system('pip install -e ./diffusers/')
+    os.system('pip install -r ./diffusers/examples/dreambooth/requirements.txt')
+
+    # Remove useless files to free memory space
+    os.system('rm -r ./diffusers/docs/')
+    os.system('rm -r ./diffusers/tests/')
+    os.system('rm -r ./diffusers/examples/rl/')
+    os.system('rm -r ./diffusers/examples/community/')
+    os.system('rm -r ./diffusers/examples/research_projects/')
+    os.system('rm -r ./diffusers/examples/inference/')
+    os.system('rm -r ./diffusers/examples/text_to_image/')
+    os.system('rm -r ./diffusers/examples/textual_inversion/')
+    os.system('rm -r ./diffusers/examples/unconditional_image_generation/')
+    os.system('rm -r ./diffusers/docker/')
+    os.system('rm -r ./finetuned-model/')
+    os.system('rm ./.ipynb_checkpoints')
+    os.system('rm -r ./diffusers/.git/')
+    os.system('rm -r ./diffusers/.github/')
+
+    for i in glob.iglob('./diffusers/**/__pycache__', recursive=True):
+        os.system(f'rm -r {i}')
+    
+    logger.info(args.training_dir)
+    logger.info(args.model_dir)
+    
+    os.system(f"""
+    accelerate launch --gpu_ids=0 --num_processes=1 --num_machines=1 --dynamo_backend='no' --mixed_precision='fp16' \
+        diffusers/examples/dreambooth/train_dreambooth.py \
+          --pretrained_model_name_or_path={args.pretrained_model_name_or_path}  \
+          --instance_data_dir={args.training_dir} \
+          --output_dir={args.model_dir} \
+          --instance_prompt={args.instance_prompt} \
+          --resolution={args.resolution} \
+          --train_batch_size={args.train_batch_size} \
+          --gradient_accumulation_steps={args.gradient_accumulation_steps} --gradient_checkpointing \
+          --use_8bit_adam \
+          --learning_rate={args.learning_rate} \
+          --lr_scheduler="constant" \
+          --lr_warmup_steps={args.lr_warmup_steps} \
+          --num_class_images={args.num_class_images} \
+          --max_train_steps={args.num_class_images}
+    """)
