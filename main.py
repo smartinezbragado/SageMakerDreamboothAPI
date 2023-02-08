@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 
 load_dotenv()
-s3_client = boto3.client('s3')
+s3_client = boto3.client('s3', region="us-east-1")
 
 app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
