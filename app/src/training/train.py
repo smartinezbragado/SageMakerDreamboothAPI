@@ -187,7 +187,7 @@ if __name__ == "__main__":
         """)
 
         os.system(f"rm -r {os.path.join(args.model_dir, 'vae')}")
-        os.system(f"rm -r {os.path.join(args.model_dir.model_dir, 'unet')}")
+        os.system(f"rm -r {os.path.join(args.model_dir, 'unet')}")
         os.system(f"rm -r {os.path.join(args.model_dir, 'scheduler')}")
         os.system(f"rm -r {os.path.join(args.model_dir, 'feature_extractor')}")
         os.system(f"rm -r {os.path.join(args.model_dir, 'tokenizer')}")
