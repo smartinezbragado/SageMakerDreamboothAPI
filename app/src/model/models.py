@@ -17,13 +17,6 @@ class Hyperparameters(BaseModel):
     class_data_dir: str = os.path.join('opt' ,'ml', 'model', 'class_images')
     class_prompt: str = "A photo of a person"
     train_text_encoder: bool = False
-    hub_token: Optional[str] = None
-    hub_model_id: Optional[str] = None
-    push_to_hub: bool = False
-    deploy_endpoint: bool = False
-    bearer_token: Optional[str] = None
-    repository_name: Optional[str] = None
-    endpoint_name: Optional[str] = None
 
 
 class TrainingConfig(BaseModel):

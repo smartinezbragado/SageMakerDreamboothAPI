@@ -163,7 +163,7 @@ if __name__ == "__main__":
             diffusers/examples/dreambooth/train_dreambooth.py \
             --pretrained_model_name_or_path={args.pretrained_model_name_or_path}  \
             --instance_data_dir={args.training_dir} \
-            --output_dir={model_path} \
+            --output_dir={args.model_dir} \
             --instance_prompt="{args.instance_prompt}" \
             --resolution={args.resolution} \
             --train_batch_size={args.train_batch_size} \
@@ -181,14 +181,14 @@ if __name__ == "__main__":
 
         os.system(f"""
         python diffusers/scripts/convert_diffusers_to_original_stable_diffusion.py \
-            --model_path={model_path} \
-            --checkpoint_path={os.path.join(model_path, 'model.ckpt')} \
+            --model_path={args.model_dir} \
+            --checkpoint_path={os.path.join(args.model_dir, 'model.ckpt')} \
             --half
         """)
 
-        os.system(f"rm -r {os.path.join(model_path, 'vae')}")
-        os.system(f"rm -r {os.path.join(model_path, 'unet')}")
-        os.system(f"rm -r {os.path.join(model_path, 'scheduler')}")
-        os.system(f"rm -r {os.path.join(model_path, 'feature_extractor')}")
-        os.system(f"rm -r {os.path.join(model_path, 'tokenizer')}")
-        os.system(f"rm -r {os.path.join(model_path, 'text_encoder')}")
+        os.system(f"rm -r {os.path.join(args.model_dir, 'vae')}")
+        os.system(f"rm -r {os.path.join(args.model_dir.model_dir, 'unet')}")
+        os.system(f"rm -r {os.path.join(args.model_dir, 'scheduler')}")
+        os.system(f"rm -r {os.path.join(args.model_dir, 'feature_extractor')}")
+        os.system(f"rm -r {os.path.join(args.model_dir, 'tokenizer')}")
+        os.system(f"rm -r {os.path.join(args.model_dir, 'text_encoder')}")
