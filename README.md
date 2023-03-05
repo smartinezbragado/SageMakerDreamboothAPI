@@ -34,7 +34,7 @@ app
 
 ### **Deployment**
 It is deployed using AWS Lambda + AWS API Gateway, which allows serverless scalability at a low cost.
-During training it is possible to save the model in s3 or in Hugging Face endpoint, setting the argument push_to_hub to True.
+During training it is possible to save the model to s3 or to Hugging Face, setting the argument push_to_hub to True.
 
 
 
