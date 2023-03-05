@@ -12,6 +12,7 @@ os.system('pip install setuptools==59.5.0')
 
 import glob    
 
+
 def convert_str_to_bool(arg: str):
     if arg.lower() == 'false':
         return False
@@ -40,6 +41,18 @@ if __name__ == "__main__":
     parser.add_argument("--class_data_dir", default=os.path.join(model_path, 'class_images'))
     parser.add_argument("--class_prompt", default="A photo of a person")
     parser.add_argument("--train_text_encoder", default=False)
+    parser.add_argument("--prompt", default="A photo of a man in the moon")
+    parser.add_argument("--guidance_scale", type=float, default=7.5)
+    parser.add_argument("--num_inference_steps", type=int, default=50)
+    parser.add_argument("--number", type=int, default=2)
+    parser.add_argument("--width", type=int, default=768)
+    parser.add_argument("--height", type=int, default=768)
+    parser.add_argument("--center_crop", default=False)
+    parser.add_argument("--checkpointing_steps", type=int, default=1500)
+    parser.add_argument("--push_to_hub", default=True)
+    parser.add_argument("--hub_token", type=str)
+    parser.add_argument("--hub_model_id", type=str)
+
 
     print(os.environ["SM_NUM_GPUS"])
 
@@ -60,10 +73,12 @@ if __name__ == "__main__":
     args.ckpt = convert_str_to_bool(args.ckpt)
     args.with_prior_preservation = convert_str_to_bool(args.with_prior_preservation)
     args.train_text_encoder = convert_str_to_bool(args.train_text_encoder)
+    args.push_to_hub = convert_str_to_bool(args.push_to_hub)
 
     # Preprocess string inputs
     args.instance_prompt = args.instance_prompt.replace('_', ' ')
     args.class_prompt = args.class_prompt.replace('_', ' ')
+    args.prompt = args.prompt.replace('_', ' ')
 
     # Set up logging
     logger = logging.getLogger(__name__)
@@ -101,6 +116,18 @@ if __name__ == "__main__":
     logger.info(args.training_dir)
     logger.info(args.model_dir)
 
+    if args.push_to_hub:
+        os.system("pip install --upgrade huggingface_hub")
+        from huggingface_hub import create_repo, Repository
+
+        model_path = os.path.join('tmp')   
+        repo_name = f"Vinwapgames/{args.hub_model_id}"
+        create_repo(repo_id=repo_name, private=True, token=args.hub_token)
+        repo = Repository(model_path, clone_from=repo_name, token=args.hub_token) 
+
+    else:
+        model_path = args.model_dir
+
     os.system('pip install protobuf==3.20.* --upgrade')
     logger.info(args)
 
@@ -114,7 +141,7 @@ if __name__ == "__main__":
             --train_text_encoder \
             --instance_data_dir={args.training_dir} \
             --class_data_dir={args.class_data_dir} \
-            --output_dir={args.model_dir} \
+            --output_dir={model_path} \
             --with_prior_preservation --prior_loss_weight={args.prior_loss_weight} \
             --instance_prompt="{args.instance_prompt}" \
             --class_prompt="{args.class_prompt}" \
@@ -127,7 +154,7 @@ if __name__ == "__main__":
             --lr_warmup_steps={args.lr_warmup_steps} \
             --num_class_images={args.num_class_images} \
             --max_train_steps={args.max_train_steps} \
-            --checkpointing_steps 1000
+            --checkpointing_steps={args.checkpointing_steps}
         """)
 
     if args.with_prior_preservation:
@@ -139,7 +166,7 @@ if __name__ == "__main__":
             --pretrained_model_name_or_path={args.pretrained_model_name_or_path}  \
             --instance_data_dir={args.training_dir} \
             --class_data_dir={args.class_data_dir} \
-            --output_dir={args.model_dir} \
+            --output_dir={model_path} \
             --with_prior_preservation --prior_loss_weight={args.prior_loss_weight} \
             --instance_prompt="{args.instance_prompt}" \
             --class_prompt="{args.class_prompt}" \
@@ -152,7 +179,7 @@ if __name__ == "__main__":
             --lr_warmup_steps={args.lr_warmup_steps} \
             --num_class_images={args.num_class_images} \
             --max_train_steps={args.max_train_steps} \
-            --checkpointing_steps 1000
+            --checkpointing_steps={args.checkpointing_steps}
         """)
 
     else:
@@ -163,7 +190,7 @@ if __name__ == "__main__":
             diffusers/examples/dreambooth/train_dreambooth.py \
             --pretrained_model_name_or_path={args.pretrained_model_name_or_path}  \
             --instance_data_dir={args.training_dir} \
-            --output_dir={args.model_dir} \
+            --output_dir={model_path} \
             --instance_prompt="{args.instance_prompt}" \
             --resolution={args.resolution} \
             --train_batch_size={args.train_batch_size} \
@@ -173,22 +200,52 @@ if __name__ == "__main__":
             --lr_scheduler="constant" \
             --lr_warmup_steps={args.lr_warmup_steps} \
             --max_train_steps={args.max_train_steps} \
-            --checkpointing_steps 1000
+            --center_crop \
+            --checkpointing_steps={args.checkpointing_steps}
         """)
+    
+    os.system('pip install diffusers==0.13.0')
+    import torch
+    from diffusers import StableDiffusionPipeline
+
+    model = StableDiffusionPipeline.from_pretrained(
+        model_path, torch_dtype=torch.float16
+    )
+    model.enable_attention_slicing()
+    model = model.to("cuda")
+
+    inference_input = {
+        "prompt": [args.prompt] * args.number,
+        "guidance_scale": args.guidance_scale,
+        "num_inference_steps": args.num_inference_steps,
+        "height": args.height,
+        "width": args.width
+    }
+    logger.info(inference_input)
+
+    images = model(**inference_input)["images"]
+    os.mkdir(os.path.join(args.model_dir, 'images'))
+
+    for n, i in enumerate(images):
+        i.save(os.path.join(args.model_dir, 'images', f'{n}.jpeg'))
 
     if args.ckpt:    
         os.system("pip install safetensors")
 
         os.system(f"""
         python diffusers/scripts/convert_diffusers_to_original_stable_diffusion.py \
-            --model_path={args.model_dir} \
-            --checkpoint_path={os.path.join(args.model_dir, 'model.ckpt')} \
+            --model_path={model_path} \
+            --checkpoint_path={os.path.join(model_path, 'model.ckpt')} \
             --half
         """)
 
-        os.system(f"rm -r {os.path.join(args.model_dir, 'vae')}")
-        os.system(f"rm -r {os.path.join(args.model_dir.model_dir, 'unet')}")
-        os.system(f"rm -r {os.path.join(args.model_dir, 'scheduler')}")
-        os.system(f"rm -r {os.path.join(args.model_dir, 'feature_extractor')}")
-        os.system(f"rm -r {os.path.join(args.model_dir, 'tokenizer')}")
-        os.system(f"rm -r {os.path.join(args.model_dir, 'text_encoder')}")
+        os.system(f"rm -r {os.path.join(model_path, 'vae')}")
+        os.system(f"rm -r {os.path.join(model_path, 'unet')}")
+        os.system(f"rm -r {os.path.join(model_path, 'scheduler')}")
+        os.system(f"rm -r {os.path.join(model_path, 'feature_extractor')}")
+        os.system(f"rm -r {os.path.join(model_path, 'tokenizer')}")
+        os.system(f"rm -r {os.path.join(model_path, 'text_encoder')}")
+
+    if args.push_to_hub:
+        logger.info('Pushing to hub')
+        repo.push_to_hub(commit_message="End of training", blocking=True)
