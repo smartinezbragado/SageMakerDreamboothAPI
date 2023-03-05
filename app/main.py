@@ -5,6 +5,7 @@ from mangum import Mangum
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from botocore.exceptions import ClientError
+from app.src.utils.utils import *
 from app.src.training.sagemaker_train import SageMakerTrain
 from app.src.model.models import TrainingConfig, DeleteInput, InferenceConfig
 
@@ -25,6 +26,7 @@ async def send_training_job_to_sagemaker(payload: TrainingConfig) -> dict:
     train_cfg = payload.dict()
     train_cfg['hyperparameters']['instance_prompt'] = train_cfg.get('hyperparameters').get('instance_prompt').replace(' ', '_')
     train_cfg['hyperparameters']['class_prompt'] = train_cfg.get('hyperparameters').get('class_prompt').replace(' ', '_')
+    train_cfg['hyperparameters']['prompt'] = train_cfg.get('hyperparameters').get('prompt').replace(' ', '_')
     sm = SageMakerTrain(train_cfg)
 
     try:
@@ -48,9 +50,31 @@ async def get_sagemaker_training_job_status(user_id: str, model_id: str) -> dict
     sm = SageMakerTrain({"user_id": user_id,"model_id": model_id})
     try:
         training_status = sm.sess.describe_training_job(sm.job_name)['SecondaryStatusTransitions']
-        return {'job_name': sm.job_name, 'status': training_status[-1]['Status']}
+
+        if training_status[-1]['Status'] != 'Completed':
+            return {
+                'job_name': sm.job_name, 
+                'status': training_status[-1]['Status']
+            }
+        
+        elif training_status[-1]['Status'] == 'Completed':
+            extract_images_from_s3_tar_file(sm.job_name)
+            url = get_url_from_s3_path(f"s3://{os.getenv('SAGEMAKER_BUCKET')}/{sm.job_name}/output/images/")
+            
+            return {
+                'job_name': sm.job_name, 
+                'status': training_status[-1]['Status'],
+                'images': [
+                    os.path.join(url, f'{n}.jpeg') for n in range(len(os.listdir('/tmp/images')))
+                ]
+            }
+        
     except ClientError:
-        return {'job_name': sm.job_name, 'status': 'queue', 'jobs_in_queue': sm._get_jobs_in_queue()}
+        return {
+            'job_name': sm.job_name, 
+            'status': 'queue', 
+            'jobs_in_queue': sm._get_jobs_in_queue()
+        }
 
 
 @app.get('/models/list')
