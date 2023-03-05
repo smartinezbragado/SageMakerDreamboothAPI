@@ -1,7 +1,7 @@
 ## **Dreambooth API**
 This repository contains the API to train Stable Diffusion models on Sagemaker using Dreambooth.
 The API is built using FastAPI framework, and it is handled by Mangum module in order to deploy it in AWS Lambda + AWS API Gateway.
-This training requires a GPU with at least 16BG of VRAM (e.g. "ml.g5.xlarge" instance)
+The training requires a GPU with at least 16BG of VRAM (e.g. "ml.g5.xlarge" instance) for simple dreambooth. In case you want to apply prior preservation or train the text encoder you will need a bigger machine.
 
 ### **Repository Structure**
 ```
@@ -33,9 +33,8 @@ app
 **inference.py:** Sagemaker inference entrypoint.
 
 ### **Deployment**
-The API is currently deployed in the following url: https://3f041ecl7b.execute-api.us-east-1.amazonaws.com/dev
-
 It is deployed using AWS Lambda + AWS API Gateway, which allows serverless scalability at a low cost.
+During training it is possible to save the model to s3 or to Hugging Face, setting the argument push_to_hub to True.
 
 
 

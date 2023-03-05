@@ -154,7 +154,8 @@ if __name__ == "__main__":
             --lr_warmup_steps={args.lr_warmup_steps} \
             --num_class_images={args.num_class_images} \
             --max_train_steps={args.max_train_steps} \
-            --checkpointing_steps={args.checkpointing_steps}
+            --checkpointing_steps={args.checkpointing_steps} \
+            --center_crop \
         """)
 
     if args.with_prior_preservation:
@@ -179,7 +180,8 @@ if __name__ == "__main__":
             --lr_warmup_steps={args.lr_warmup_steps} \
             --num_class_images={args.num_class_images} \
             --max_train_steps={args.max_train_steps} \
-            --checkpointing_steps={args.checkpointing_steps}
+            --checkpointing_steps={args.checkpointing_steps} \
+            --center_crop \
         """)
 
     else:
