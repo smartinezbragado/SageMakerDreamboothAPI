@@ -19,7 +19,7 @@ def upload_folder_to_s3(path: str, job_name: str) -> None:
             s3_client.upload_file(
                 os.path.join(root,file), 
                 os.getenv('SAGEMAKER_BUCKET'), 
-                os.path.join(job_name, 'output', 'images', file)
+                os.path.join('inference', job_name, 'images', file)
             )
 
 
