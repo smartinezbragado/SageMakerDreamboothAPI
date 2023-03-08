@@ -33,8 +33,10 @@ app
 **inference.py:** Sagemaker inference entrypoint.
 
 ### **Deployment**
-It is deployed using AWS Lambda + AWS API Gateway, which allows serverless scalability at a low cost.
+It is deployed using AWS Lambda + AWS API Gateway, which allows serverless scalability at a low cost. Both Lambda function and API are called serverless-fastapi-dev.
+
 During training it is possible to save the model to s3 or to Hugging Face, setting the argument push_to_hub to True.
+
 
 
 

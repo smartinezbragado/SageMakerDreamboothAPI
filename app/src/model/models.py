@@ -11,6 +11,7 @@ class Hyperparameters(BaseModel):
     train_batch_size: int = 1
     learning_rate: float = 5e-6
     lr_warmup_steps: int = 0
+    lr_scheduler: str = "constant"
     num_class_images: int = 200
     max_train_steps: int = 800
     center_crop: bool = False
@@ -24,7 +25,7 @@ class Hyperparameters(BaseModel):
     number: int = 2
     guidance_scale: float = 7.5
     num_inference_steps: int = 50
-    widht: int = 768
+    width: int = 768
     height: int = 768
     hub_token: Optional[str] = os.getenv('HUB_TOKEN')
     hub_model_id: Optional[str] = None

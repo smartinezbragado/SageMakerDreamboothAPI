@@ -33,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_warmup_steps", type=int, default=0)
+    parser.add_argument("--lr_scheduler", type=str, default="constant")
     parser.add_argument("--num_class_images", type=int, default=200)
     parser.add_argument("--max_train_steps", type=int, default=800)
     parser.add_argument("--ckpt", default=False)
@@ -150,7 +151,7 @@ if __name__ == "__main__":
             --gradient_accumulation_steps={args.gradient_accumulation_steps} --gradient_checkpointing \
             --use_8bit_adam \
             --learning_rate={args.learning_rate} \
-            --lr_scheduler="constant" \
+            --lr_scheduler={args.lr_scheduler} \
             --lr_warmup_steps={args.lr_warmup_steps} \
             --num_class_images={args.num_class_images} \
             --max_train_steps={args.max_train_steps} \
@@ -176,7 +177,7 @@ if __name__ == "__main__":
             --gradient_accumulation_steps={args.gradient_accumulation_steps} --gradient_checkpointing \
             --use_8bit_adam \
             --learning_rate={args.learning_rate} \
-            --lr_scheduler="constant" \
+            --lr_scheduler={args.lr_scheduler} \
             --lr_warmup_steps={args.lr_warmup_steps} \
             --num_class_images={args.num_class_images} \
             --max_train_steps={args.max_train_steps} \
@@ -199,7 +200,7 @@ if __name__ == "__main__":
             --gradient_accumulation_steps={args.gradient_accumulation_steps} --gradient_checkpointing \
             --use_8bit_adam \
             --learning_rate={args.learning_rate} \
-            --lr_scheduler="constant" \
+            --lr_scheduler={args.lr_scheduler} \
             --lr_warmup_steps={args.lr_warmup_steps} \
             --max_train_steps={args.max_train_steps} \
             --center_crop \
@@ -213,7 +214,7 @@ if __name__ == "__main__":
     model = StableDiffusionPipeline.from_pretrained(
         model_path, torch_dtype=torch.float16
     )
-    model.enable_attention_slicing()
+    # model.enable_attention_slicing()
     model = model.to("cuda")
 
     inference_input = {
